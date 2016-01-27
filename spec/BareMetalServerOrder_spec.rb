@@ -63,6 +63,28 @@ describe SoftLayer::BareMetalServerOrder do
     expect(subject.hardware_instance_template['memoryCapacity']).to eq 4
   end
 
+  it "places the fixed config key in the template" do
+    subject.fixed_config_key = "S1270_8GB_2X1TBSATA_NORAID"
+
+    template = subject.hardware_instance_template()
+    expect(template["fixedConfigurationPreset"]).to_not be_nil
+    expect(template["fixedConfigurationPreset"]["keyName"]).to eq "S1270_8GB_2X1TBSATA_NORAID"
+  end
+
+  it "does not allow both cores and fixed config presets" do
+    subject.fixed_config_key = "S1270_8GB_2X1TBSATA_NORAID"
+    subject.cores = 4
+
+    expect {subject.hardware_instance_template()}.to raise_error(RuntimeError)
+  end
+
+  it "does not allow both memory and fixed config presets" do
+    subject.fixed_config_key = "S1270_8GB_2X1TBSATA_NORAID"
+    subject.memory = 4
+
+    expect {subject.hardware_instance_template()}.to raise_error(RuntimeError)
+  end
+
   it "places an OS identifier into the order template as the operatingSystemReferenceCode" do
     expect(subject.hardware_instance_template['operatingSystemReferenceCode']).to be_nil
     subject.os_reference_code = 'UBUNTU_12_64'

@@ -41,11 +41,17 @@ module SoftLayer
 
     # Integer, The number of cpu cores to include in the instance
     # Corresponds to +processorCoreAmount+ in the documentation for +createObject+
+    # If a fixed config key is given, this value should not be specified
     attr_accessor :cores
 
     # Integer, The amount of RAM for the new server (specified in Gigabytes so a value of 4 is 4GB)
     # Corresponds to +memoryCapacity+ in the documentation for +createObject+
+    # If a fixed config key is given, this value should not be specified
     attr_accessor :memory
+
+    # String, one of the keys for a fixed config (aka fast provision) Bare Metal server.
+    # If this is provided, then the cores and memory options should not be provided.
+    attr_accessor :fixed_config_key
 
     # String, An OS reference code for the operating system to install on the server
     # Corresponds to +operatingSystemReferenceCode+ in the +createObject+ documentation
@@ -143,8 +149,6 @@ module SoftLayer
     # the SoftLayer API for either verification or completion
     def hardware_instance_template
       template = {
-        "processorCoreAmount" => @cores.to_i,
-        "memoryCapacity" => @memory.to_i,
         "hostname" => @hostname,
         "domain" => @domain,
         "operatingSystemReferenceCode" => @os_reference_code,
@@ -154,6 +158,16 @@ module SoftLayer
         "localDiskFlag" => !!@use_local_disk,
         "hourlyBillingFlag" => !!@hourly
       }
+
+      if !!@fixed_config_key then
+        raise "If a fixed config key is used then the cores and memory order parameters should not be specified" if @cores || @memory
+        template["fixedConfigurationPreset"] = { "keyName" => @fixed_config_key }
+      else
+        template.merge!({
+          "processorCoreAmount" => @cores.to_i,
+          "memoryCapacity" => @memory.to_i,          
+          })
+      end
 
       template['privateNetworkOnlyFlag'] = true if @private_network_only
 
